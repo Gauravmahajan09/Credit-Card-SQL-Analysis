@@ -1,0 +1,319 @@
+CREATE DATABASE CreditCardAnalysis;
+
+USE CreditCardAnalysis;
+
+-- ==========================================
+-- 1. CUSTOMERS TABLE
+-- ==========================================
+
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    gender VARCHAR(10),
+    age INT,
+    city VARCHAR(50)
+);
+
+INSERT INTO customers VALUES
+(1, 'Aarav Sharma', 'Male', 25, 'Pune'),
+(2, 'Sadiya Shaikh', 'Female', 23, 'Mumbai'),
+(3, 'Rahul Patil', 'Male', 31, 'Pune'),
+(4, 'Ananya Joshi', 'Female', 28, 'Delhi'),
+(5, 'Kabir Khan', 'Male', 35, 'Mumbai'),
+(6, 'Priya Deshmukh', 'Female', 26, 'Nagpur'),
+(7, 'Rohan Mehta', 'Male', 40, 'Bangalore'),
+(8, 'Neha Kulkarni', 'Female', 29, 'Pune'),
+(9, 'Arjun Verma', 'Male', 33, 'Delhi'),
+(10, 'Sara Ansari', 'Female', 27, 'Mumbai');
+
+
+-- ==========================================
+-- 2. CREDIT CARDS TABLE
+-- ==========================================
+
+CREATE TABLE credit_cards (
+    card_id INT PRIMARY KEY,
+    customer_id INT,
+    card_type VARCHAR(30),
+    credit_limit DECIMAL(10,2),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+INSERT INTO credit_cards VALUES
+(101, 1, 'Visa', 50000),
+(102, 2, 'MasterCard', 80000),
+(103, 3, 'Visa', 60000),
+(104, 4, 'MasterCard', 75000),
+(105, 5, 'Visa', 100000),
+(106, 6, 'RuPay', 40000),
+(107, 7, 'Visa', 120000),
+(108, 8, 'MasterCard', 70000),
+(109, 9, 'Visa', 90000),
+(110, 10, 'RuPay', 50000);
+
+
+-- ==========================================
+-- 3. MERCHANTS TABLE
+-- ==========================================
+
+CREATE TABLE merchants (
+    merchant_id INT PRIMARY KEY,
+    merchant_name VARCHAR(100),
+    category VARCHAR(50),
+    city VARCHAR(50)
+);
+
+INSERT INTO merchants VALUES
+(201, 'Amazon', 'Shopping', 'Mumbai'),
+(202, 'Flipkart', 'Shopping', 'Pune'),
+(203, 'Swiggy', 'Food', 'Pune'),
+(204, 'Zomato', 'Food', 'Mumbai'),
+(205, 'Myntra', 'Fashion', 'Delhi'),
+(206, 'Reliance', 'Grocery', 'Pune'),
+(207, 'Uber', 'Travel', 'Bangalore'),
+(208, 'MakeMyTrip', 'Travel', 'Delhi'),
+(209, 'Netflix', 'Entertainment', 'Mumbai'),
+(210, 'Croma', 'Electronics', 'Pune');
+
+
+-- ==========================================
+-- 4. TRANSACTIONS TABLE
+-- ==========================================
+
+CREATE TABLE transactions (
+    transaction_id INT PRIMARY KEY,
+    card_id INT,
+    merchant_id INT,
+    transaction_date DATE,
+    amount DECIMAL(10,2),
+    payment_status VARCHAR(20),
+    FOREIGN KEY (card_id) REFERENCES credit_cards(card_id),
+    FOREIGN KEY (merchant_id) REFERENCES merchants(merchant_id)
+);
+
+INSERT INTO transactions VALUES
+(1001, 101, 201, '2026-01-05', 2500, 'Success'),
+(1002, 102, 203, '2026-01-06', 850, 'Success'),
+(1003, 103, 202, '2026-01-08', 4500, 'Success'),
+(1004, 104, 205, '2026-01-10', 3200, 'Failed'),
+(1005, 105, 210, '2026-01-12', 15000, 'Success'),
+(1006, 106, 204, '2026-01-15', 1200, 'Success'),
+(1007, 107, 207, '2026-01-17', 2200, 'Success'),
+(1008, 108, 209, '2026-01-20', 650, 'Failed'),
+(1009, 109, 206, '2026-01-22', 3800, 'Success'),
+(1010, 110, 208, '2026-01-25', 7500, 'Success'),
+(1011, 101, 203, '2026-02-02', 1100, 'Success'),
+(1012, 102, 201, '2026-02-05', 5200, 'Success'),
+(1013, 103, 210, '2026-02-08', 18000, 'Success'),
+(1014, 104, 204, '2026-02-11', 950, 'Success'),
+(1015, 105, 205, '2026-02-15', 4200, 'Failed');
+
+
+-- ==========================================
+-- 5. BASIC ANALYSIS
+-- ==========================================
+
+-- Total transaction amount
+SELECT SUM(amount) AS total_transaction_amount
+FROM transactions;
+
+-- Average transaction amount
+SELECT AVG(amount) AS average_transaction_amount
+FROM transactions;
+
+-- Highest transaction
+SELECT MAX(amount) AS highest_transaction
+FROM transactions;
+
+-- Lowest transaction
+SELECT MIN(amount) AS lowest_transaction
+FROM transactions;
+
+
+-- ==========================================
+-- 6. SPENDING BY CATEGORY
+-- ==========================================
+
+SELECT
+    m.category,
+    SUM(t.amount) AS total_spending
+FROM transactions t
+JOIN merchants m
+    ON t.merchant_id = m.merchant_id
+WHERE t.payment_status = 'Success'
+GROUP BY m.category
+ORDER BY total_spending DESC;
+
+
+-- ==========================================
+-- 7. CUSTOMER SPENDING ANALYSIS
+-- ==========================================
+
+SELECT
+    c.customer_id,
+    c.customer_name,
+    SUM(t.amount) AS total_spending
+FROM customers c
+JOIN credit_cards cc
+    ON c.customer_id = cc.customer_id
+JOIN transactions t
+    ON cc.card_id = t.card_id
+WHERE t.payment_status = 'Success'
+GROUP BY c.customer_id, c.customer_name
+ORDER BY total_spending DESC;
+
+
+-- ==========================================
+-- 8. TOP 3 CUSTOMERS
+-- ==========================================
+
+SELECT
+    c.customer_name,
+    SUM(t.amount) AS total_spending
+FROM customers c
+JOIN credit_cards cc
+    ON c.customer_id = cc.customer_id
+JOIN transactions t
+    ON cc.card_id = t.card_id
+WHERE t.payment_status = 'Success'
+GROUP BY c.customer_id, c.customer_name
+ORDER BY total_spending DESC
+LIMIT 3;
+
+
+-- ==========================================
+-- 9. PAYMENT STATUS ANALYSIS
+-- ==========================================
+
+SELECT
+    payment_status,
+    COUNT(*) AS transaction_count
+FROM transactions
+GROUP BY payment_status;
+
+
+-- ==========================================
+-- 10. SPENDING BY CARD TYPE
+-- ==========================================
+
+SELECT
+    cc.card_type,
+    SUM(t.amount) AS total_spending
+FROM credit_cards cc
+JOIN transactions t
+    ON cc.card_id = t.card_id
+WHERE t.payment_status = 'Success'
+GROUP BY cc.card_type
+ORDER BY total_spending DESC;
+
+
+-- ==========================================
+-- 11. CUSTOMER SEGMENTATION
+-- ==========================================
+
+SELECT
+    c.customer_name,
+    SUM(t.amount) AS total_spending,
+    CASE
+        WHEN SUM(t.amount) >= 15000 THEN 'High Spender'
+        WHEN SUM(t.amount) >= 5000 THEN 'Medium Spender'
+        ELSE 'Low Spender'
+    END AS spending_category
+FROM customers c
+JOIN credit_cards cc
+    ON c.customer_id = cc.customer_id
+JOIN transactions t
+    ON cc.card_id = t.card_id
+WHERE t.payment_status = 'Success'
+GROUP BY c.customer_id, c.customer_name;
+
+
+-- ==========================================
+-- 12. CUSTOMER SPENDING RANK
+-- ==========================================
+
+SELECT
+    c.customer_name,
+    SUM(t.amount) AS total_spending,
+    RANK() OVER (
+        ORDER BY SUM(t.amount) DESC
+    ) AS spending_rank
+FROM customers c
+JOIN credit_cards cc
+    ON c.customer_id = cc.customer_id
+JOIN transactions t
+    ON cc.card_id = t.card_id
+WHERE t.payment_status = 'Success'
+GROUP BY c.customer_id, c.customer_name;
+
+
+-- ==========================================
+-- 13. HIGHEST TRANSACTION BY CATEGORY
+-- ==========================================
+
+WITH category_transactions AS (
+    SELECT
+        m.category,
+        t.transaction_id,
+        t.amount,
+        ROW_NUMBER() OVER (
+            PARTITION BY m.category
+            ORDER BY t.amount DESC
+        ) AS rn
+    FROM transactions t
+    JOIN merchants m
+        ON t.merchant_id = m.merchant_id
+    WHERE t.payment_status = 'Success'
+)
+SELECT *
+FROM category_transactions
+WHERE rn = 1;
+
+
+-- ==========================================
+-- 14. CUSTOMERS ABOVE AVERAGE SPENDING
+-- ==========================================
+
+WITH customer_spending AS (
+    SELECT
+        c.customer_id,
+        c.customer_name,
+        SUM(t.amount) AS total_spending
+    FROM customers c
+    JOIN credit_cards cc
+        ON c.customer_id = cc.customer_id
+    JOIN transactions t
+        ON cc.card_id = t.card_id
+    WHERE t.payment_status = 'Success'
+    GROUP BY c.customer_id, c.customer_name
+)
+SELECT *
+FROM customer_spending
+WHERE total_spending > (
+    SELECT AVG(total_spending)
+    FROM customer_spending
+);
+
+
+-- ==========================================
+-- 15. HIGH VALUE TRANSACTIONS
+-- ==========================================
+
+SELECT
+    t.transaction_id,
+    c.customer_name,
+    t.amount,
+    m.merchant_name,
+    m.category
+FROM transactions t
+JOIN credit_cards cc
+    ON t.card_id = cc.card_id
+JOIN customers c
+    ON cc.customer_id = c.customer_id
+JOIN merchants m
+    ON t.merchant_id = m.merchant_id
+WHERE t.amount > (
+    SELECT AVG(amount) * 2
+    FROM transactions
+)
+AND t.payment_status = 'Success';
